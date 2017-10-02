@@ -93,12 +93,17 @@ namespace Microsoft.AspNet.WebHooks
                 // Call registered handlers
                 var response = await ExecuteWebHookAsync(id, context, request, new string[] { action }, notifications);
 
-                // Add SOAP response if not already present
+                // Add SOAP response body if not already present or isn't XML and handler(s) ran successfully.
                 if (response == null || response.Content == null || !response.Content.IsXml())
                 {
-                    var success = ReadResource("Microsoft.AspNet.WebHooks.Messages.NotificationResponse.xml");
-                    response = GetXmlResponse(request, HttpStatusCode.OK, success);
+                    var statusCode = response?.StatusCode ?? HttpStatusCode.OK;
+                    if (statusCode >= (HttpStatusCode)200 && statusCode < (HttpStatusCode)300)
+                    {
+                        var success = ReadResource("Microsoft.AspNet.WebHooks.Messages.NotificationResponse.xml");
+                        response = GetXmlResponse(request, statusCode, success);
+                    }
                 }
+
                 return response;
             }
             else
